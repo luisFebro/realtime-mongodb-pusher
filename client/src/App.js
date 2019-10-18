@@ -3,10 +3,6 @@ import './App.css';
 
 import Pusher from 'pusher-js';
 
-const API_URL = 'http://localhost:9000/api/';
-const PUSHER_APP_KEY = 'INSERT_APP_KEY';
-const PUSHER_APP_CLUSTER = 'INSERT_APP_CLUSTER';
-
 class App extends Component {
   constructor(props) {
     super(props);
@@ -20,20 +16,21 @@ class App extends Component {
     this.addTask = this.addTask.bind(this);
     this.removeTask = this.removeTask.bind(this);
   }
-    
+
   updateText(e) {
     this.setState({ task: e.target.value });
   }
 
   postTask(e) {
     e.preventDefault();
+    // if field is empty, return and do nothing
     if (!this.state.task.length) {
       return;
     }
     const newTask = {
       task: this.state.task
     };
-    fetch(API_URL + 'new', {
+    fetch("http://localhost:9000/api/new", {
       method: 'post',
       headers: {
         'Content-Type': 'application/json'
@@ -41,9 +38,9 @@ class App extends Component {
       body: JSON.stringify(newTask)
     }).then(console.log);
   }
-    
+
   deleteTask(id) {
-    fetch(API_URL + id, {
+    fetch(`http://localhost:9000/api/${id}`, {
       method: 'delete'
     }).then(console.log);
   }
@@ -54,7 +51,7 @@ class App extends Component {
       task: ''
     }));
   }
-    
+
   removeTask(id) {
     this.setState(prevState => ({
       tasks: prevState.tasks.filter(el => el.id !== id)
@@ -62,16 +59,16 @@ class App extends Component {
   }
 
   componentDidMount() {
-    this.pusher = new Pusher(PUSHER_APP_KEY, {
-	  cluster: PUSHER_APP_CLUSTER,
+    this.pusher = new Pusher(process.env.REACT_APP_PUSHER_KEY, {
+	  cluster: 'us2',
       encrypted: true,
     });
     this.channel = this.pusher.subscribe('tasks');
-	
+
     this.channel.bind('inserted', this.addTask);
     this.channel.bind('deleted', this.removeTask);
   }
-    
+
   render() {
     let tasks = this.state.tasks.map(item =>
       <Task key={item.id} task={item} onTaskClick={this.deleteTask} />
@@ -80,10 +77,19 @@ class App extends Component {
     return (
       <div className="todo-wrapper">
         <form>
-          <input type="text" className="input-todo" placeholder="New task" onChange={this.updateText} value={this.state.task} />
-          <div className="btn btn-add" onClick={this.postTask}>+</div>
+          <input
+            type="text"
+            className="input-todo"
+            placeholder="New task"
+            onChange={this.updateText}
+            value={this.state.task} />
+          <div
+            className="btn btn-add"
+            onClick={this.postTask}
+            >
+            +</div>
         </form>
-        
+
         <ul>
           {tasks}
         </ul>
@@ -92,6 +98,7 @@ class App extends Component {
   }
 }
 
+// Each item of the list
 class Task extends Component {
   constructor(props) {
     super(props);
