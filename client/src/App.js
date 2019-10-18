@@ -11,14 +11,14 @@ export default function App() {
         setTask(e.target.value);
     }
 
-    async postTask(e) {
+    const postTask = async (e) => {
         e.preventDefault();
         // if field is empty, return and do nothing
-        if (!this.state.task.length) {
+        if (!task.length) {
             return;
         }
         const newTask = {
-            task: this.state.task
+            task: task
         };
 
         const config = {
@@ -37,9 +37,9 @@ export default function App() {
         }
     }
 
-    async deleteTask(id) {
+    const deleteTask = async (id) => {
         const config = {
-                method: 'delete';
+                method: 'delete',
             }
         try {
             const res = await fetch(`http://localhost:9000/api/${id}`, config)
@@ -58,64 +58,64 @@ export default function App() {
         setTasks(tasks.filter(el => el.id !== id));
     }
 
-    componentDidMount() {
-        this.pusher = new Pusher(process.env.REACT_APP_PUSHER_KEY, {
-            cluster: 'us2',
-            encrypted: true,
-        });
-        this.channel = this.pusher.subscribe('tasks');
-        this.setState({ ...this.state, isLoading: true }, () => console.log(this.state));
-        this.channel.bind('inserted', this.addTask);
-        this.channel.bind('deleted', this.removeTask);
-        this.setState({ ...this.state, isLoading: false });
-    }
+    useEffect(() => {
+        console.log("useEffect");
+    }, []);
+        // this.pusher = new Pusher(process.env.REACT_APP_PUSHER_KEY, {
+        //     cluster: 'us2',
+        //     encrypted: true,
+        // });
+        // this.channel = this.pusher.subscribe('tasks');
+        // this.setState({ ...this.state, isLoading: true }, () => console.log(this.state));
+        // this.channel.bind('inserted', this.addTask);
+        // this.channel.bind('deleted', this.removeTask);
+        // this.setState({ ...this.state, isLoading: false });
 
-    render() {
-        let tasks = this.state.tasks.map(item =>
-            <Task key={item.id} task={item} onTaskClick={this.deleteTask} />
-        );
 
-        return (
-            <div className="todo-wrapper">
-        <form>
-          <input
-            type="text"
-            className="input-todo"
-            placeholder="New task"
-            onChange={this.updateText}
-            value={this.state.task} />
-          <div
-            className="btn btn-add"
-            onClick={this.postTask}
-            >
-            +</div>
-        </form>
+    let tasksList = tasks.map(item =>
+        <Task
+            key={item.id}
+            task={item}
+            onTaskClick={deleteTask}
+        />
+    );
 
-        <ul>
-          {this.state.isLoading ? (
-            <h1>Carregando...</h1>
-            ) : tasks}
-        </ul>
-      </div>
-        );
-    }
+    return (
+        <div className="todo-wrapper">
+            <div>
+                {isLoading ? (
+                <h1>Carregando...</h1>
+                ) : null}
+            </div>
+            <form>
+              <input
+                type="text"
+                className="input-todo"
+                placeholder="New task"
+                onChange={updateText}
+                value={task} />
+              <div
+                className="btn btn-add"
+                onClick={postTask}
+                >
+                +</div>
+            </form>
+            <ul>
+              {tasksList}
+            </ul>
+        </div>
+    );
 }
 
 // Each item of the list
-class Task extends Component {
-    constructor(props) {
-        super(props);
-        this._onClick = this._onClick.bind(this);
+function Task({ key, task, onTaskClick}) {
+    const _onClick = () => {
+        onTaskClick(task.id);
     }
-    _onClick() {
-        this.props.onTaskClick(this.props.task.id);
-    }
-    render() {
-        return (
-            <li key={this.props.task.id}>
-        <div className="text">{this.props.task.task}</div>
-        <div className="delete" onClick={this._onClick}>-</div>
-      </li>
-        );
-    }
-}
+    return (
+        <li key={task.id}>
+            <div className="text">{task.task}</div>
+            <div className="delete" onClick={_onClick}>-</div>
+        </li>
+    );
+};

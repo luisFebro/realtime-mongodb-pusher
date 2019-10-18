@@ -42,6 +42,7 @@ class App extends Component {
   }
 
   deleteTask(id) {
+    this.setState({ isLoading: true });
     fetch(`http://localhost:9000/api/${id}`, {
       method: 'delete'
     }).then(console.log);
@@ -61,9 +62,9 @@ class App extends Component {
     }));
   }
 
-  componentDidUpdate() {
-    console.log(this.state);
-  }
+  // componentDidUpdate() {
+  //   console.log(this.state);
+  // }
 
   componentDidMount() {
     this.pusher = new Pusher(process.env.REACT_APP_PUSHER_KEY, {
@@ -85,6 +86,11 @@ class App extends Component {
 
     return (
       <div className="todo-wrapper">
+        <div>
+            {this.state.isLoading ? (
+            <h1>Carregando...</h1>
+            ) : null}
+        </div>
         <form>
           <input
             type="text"
@@ -100,9 +106,7 @@ class App extends Component {
         </form>
 
         <ul>
-          {this.state.isLoading ? (
-            <h1>Carregando...</h1>
-            ) : tasks}
+          {tasks}
         </ul>
       </div>
     );
