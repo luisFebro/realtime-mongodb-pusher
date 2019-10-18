@@ -1,28 +1,17 @@
 const express = require('express');
-const bodyParser = require('body-parser');
+const { mongoKey } = require('./config/keys');
 const mongoose = require('mongoose');
 const api = require('./routes/api');
-const Pusher = require('pusher');
-const { mongoKey, pusherKey, pusherSecret } = require('./config/keys.js');
-
-const pusher = new Pusher({
-  appId: '882281',
-  key: pusherKey,
-  secret: pusherSecret,
-  cluster: 'us2',
-  useTLS: true,
-});
-
-const channel = 'tasks';
+const changeStreamTask = require('./models/change-streams/changeStreamTask');
 
 const app = express();
 
 // CORS - configure an Express server with CORS headers (because the React app is going to be published in a different port), JSON requests, and /api as the path
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  next();
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    next();
 });
 
 // Bodyparser Middleware
@@ -38,48 +27,19 @@ mongoose
     .connect(mongoKey, options)
     .then(() => console.log("MongoDB connected..."))
     .catch(err => console.log("MONGOERROR, LUIS: " + err));
-const db = mongoose.connection;
 
-db.on('error', console.error.bind(console, 'Connection Error:'));
-
-db.once('open', () => {
-  app.listen(9000, () => {
-    console.log('Node server running on port 9000');
-  });
-
-  //watching any update in tasks collection
-  const taskCollection = db.collection('tasks');
-  const changeStream = taskCollection.watch();
-
-  changeStream.on('change', (change) => {
-    console.log(change);
-
-    //When there’s a change in the collection,
-    //  a change event is received. In particular,
-    //  the following changes are supported:
-    //  Insert, Update, Replace, Delete, Invalidate
-    if(change.operationType === 'insert') { // n1 (output's exemple)
-      const task = change.fullDocument;
-      pusher.trigger(
-        channel,
-        'inserted',
-        {
-          id: task._id,
-          task: task.task,
-        }
-      );
-    } else if(change.operationType === 'delete') { // n2 (output's exemple)
-      pusher.trigger(
-        channel,
-        'deleted',
-        change.documentKey._id
-      );
-    }
-  });
-});
+// Collection changeStreams
+changeStreamTask();
+// End Collection changeStreams
 
 // router
 app.use('/api', api);
+
+const PORT = process.env.PORT || 9000;
+app.listen(PORT, () => {
+    console.log(`Server listening on port ${PORT}`);
+});
+
 
 // n1 - insert output's exemple
 /*{

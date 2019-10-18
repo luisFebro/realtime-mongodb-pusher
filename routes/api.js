@@ -1,4 +1,4 @@
-const Task  = require('../models/task');
+const Task  = require('../models/Task');
 const express = require('express');
 const router = express.Router();
 
@@ -20,7 +20,7 @@ router.route('/:id')
   /* DELETE */
   .delete((req, res) => {
     Task.findById(req.params.id, (err, task) => {
-      if (err) { 
+      if (err) {
         console.log('DELETE Error: ' + err);
         res.status(500).send('Error');
       } else if (task) {

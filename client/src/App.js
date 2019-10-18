@@ -1,81 +1,82 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
-
 import Pusher from 'pusher-js';
 
-class App extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      tasks: [],
-      task: ''
-    };
-    this.updateText = this.updateText.bind(this);
-    this.postTask = this.postTask.bind(this);
-    this.deleteTask = this.deleteTask.bind(this);
-    this.addTask = this.addTask.bind(this);
-    this.removeTask = this.removeTask.bind(this);
-  }
+export default function App() {
+    const [isLoading, setIsLoading] = useState(false);
+    const [tasks, setTasks] = useState([]);
+    const [task, setTask] = useState("");
 
-  updateText(e) {
-    this.setState({ task: e.target.value });
-  }
-
-  postTask(e) {
-    e.preventDefault();
-    // if field is empty, return and do nothing
-    if (!this.state.task.length) {
-      return;
+    const updateText = e => {
+        setTask(e.target.value);
     }
-    const newTask = {
-      task: this.state.task
-    };
-    fetch("http://localhost:9000/api/new", {
-      method: 'post',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(newTask)
-    }).then(console.log);
-  }
 
-  deleteTask(id) {
-    fetch(`http://localhost:9000/api/${id}`, {
-      method: 'delete'
-    }).then(console.log);
-  }
+    async postTask(e) {
+        e.preventDefault();
+        // if field is empty, return and do nothing
+        if (!this.state.task.length) {
+            return;
+        }
+        const newTask = {
+            task: this.state.task
+        };
 
-  addTask(newTask) {
-    this.setState(prevState => ({
-      tasks: prevState.tasks.concat(newTask),
-      task: ''
-    }));
-  }
+        const config = {
+            method: 'post',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(newTask)
+        }
+        try {
+            const res = await fetch("http://localhost:9000/api/new", config);
+            console.log("resFetch", res);
+        } catch (e) {
+            // statements
+            console.log("errorFetchPost" + e);
+        }
+    }
 
-  removeTask(id) {
-    this.setState(prevState => ({
-      tasks: prevState.tasks.filter(el => el.id !== id)
-    }));
-  }
+    async deleteTask(id) {
+        const config = {
+                method: 'delete';
+            }
+        try {
+            const res = await fetch(`http://localhost:9000/api/${id}`, config)
+            console.log("resDelete", res);
+        } catch(e) {
+            console.log("errorDelete" + e);
+        }
+    }
 
-  componentDidMount() {
-    this.pusher = new Pusher(process.env.REACT_APP_PUSHER_KEY, {
-	  cluster: 'us2',
-      encrypted: true,
-    });
-    this.channel = this.pusher.subscribe('tasks');
+    const addTask = newTask => {
+        setTasks(tasks.push(newTask)); //maybe will go wrong
+        setTask("");
+    }
 
-    this.channel.bind('inserted', this.addTask);
-    this.channel.bind('deleted', this.removeTask);
-  }
+    const removeTask = id => {
+        setTasks(tasks.filter(el => el.id !== id));
+    }
 
-  render() {
-    let tasks = this.state.tasks.map(item =>
-      <Task key={item.id} task={item} onTaskClick={this.deleteTask} />
-    );
+    componentDidMount() {
+        this.pusher = new Pusher(process.env.REACT_APP_PUSHER_KEY, {
+            cluster: 'us2',
+            encrypted: true,
+        });
+        this.channel = this.pusher.subscribe('tasks');
+        this.setState({ ...this.state, isLoading: true }, () => console.log(this.state));
+        this.channel.bind('inserted', this.addTask);
+        this.channel.bind('deleted', this.removeTask);
+        this.setState({ ...this.state, isLoading: false });
+    }
 
-    return (
-      <div className="todo-wrapper">
+    render() {
+        let tasks = this.state.tasks.map(item =>
+            <Task key={item.id} task={item} onTaskClick={this.deleteTask} />
+        );
+
+        return (
+            <div className="todo-wrapper">
         <form>
           <input
             type="text"
@@ -91,30 +92,30 @@ class App extends Component {
         </form>
 
         <ul>
-          {tasks}
+          {this.state.isLoading ? (
+            <h1>Carregando...</h1>
+            ) : tasks}
         </ul>
       </div>
-    );
-  }
+        );
+    }
 }
 
 // Each item of the list
 class Task extends Component {
-  constructor(props) {
-    super(props);
-    this._onClick = this._onClick.bind(this);
-  }
-  _onClick() {
-    this.props.onTaskClick(this.props.task.id);
-  }
-  render() {
-    return (
-      <li key={this.props.task.id}>
+    constructor(props) {
+        super(props);
+        this._onClick = this._onClick.bind(this);
+    }
+    _onClick() {
+        this.props.onTaskClick(this.props.task.id);
+    }
+    render() {
+        return (
+            <li key={this.props.task.id}>
         <div className="text">{this.props.task.task}</div>
         <div className="delete" onClick={this._onClick}>-</div>
       </li>
-    );
-  }
+        );
+    }
 }
-
-export default App;
