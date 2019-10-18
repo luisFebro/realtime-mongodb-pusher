@@ -11,8 +11,6 @@ const pusher = new Pusher({
     useTLS: true,
 });
 
-const channel = 'tasks';
-
 function changeStreamTask() {
     db.on('error', console.error.bind(console, 'Connection Error:'));
     db.once('open', () => {
@@ -27,21 +25,25 @@ function changeStreamTask() {
             //  a change event is received. In particular,
             //  the following changes are supported:
             //  Insert, Update, Replace, Delete, Invalidate
-            if (change.operationType === 'insert') { // n1 (output's exemple)
-                const task = change.fullDocument;
-                pusher.trigger(
-                    channel,
-                    'inserted', {
+            const task = change.fullDocument;
+            const channel = 'realtime-database-pusher';
+            let event = null;
+            let dataToPush = null;
+
+            switch(change.operationType) {
+                case 'insert':
+                    event = 'inserted';
+                    dataToPush = {
                         id: task._id,
                         task: task.task,
                     }
-                );
-            } else if (change.operationType === 'delete') { // n2 (output's exemple)
-                pusher.trigger(
-                    channel,
-                    'deleted',
-                    change.documentKey._id
-                );
+                    return pusher.trigger(channel, event, dataToPush);
+                case 'delete':
+                    event = 'deleted';
+                    dataToPush = change.documentKey._id;
+                    return pusher.trigger(channel, event, dataToPush);
+                default:
+                    console.log("default change Stream. Did not match anything");
             }
         });
     });

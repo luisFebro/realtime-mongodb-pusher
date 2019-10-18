@@ -72,7 +72,7 @@ class App extends Component {
       encrypted: true,
     });
     console.log("pusher", this.pusher);
-    this.channel = this.pusher.subscribe('tasks');
+    this.channel = this.pusher.subscribe('realtime-database-pusher');
 
     this.channel.bind('inserted', this.addTask);
     this.channel.bind('deleted', this.removeTask);
